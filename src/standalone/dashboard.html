@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>PulSync — Dashboard</title>
+  <link rel="icon" type="image/svg+xml" href="/shared/assets/logo-icon.svg" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root { --orange:#F97316; --orange-hover:#EA580C; --orange-glow:rgba(249,115,22,0.1); --green:#22C55E; --red:#EF4444; --blue:#3B82F6; --radius:12px; --radius-sm:8px; --transition:0.2s ease; }
+    [data-theme="dark"] { --bg:#0B1120; --bg-card:#151F32; --bg-hover:#1A2740; --bg-input:#1A2740; --bg-sidebar:#0D1526; --border:#1E2D45; --text:#F1F5F9; --text-sec:#94A3B8; --text-muted:#64748B; --shadow:0 4px 24px rgba(0,0,0,0.3); }
+    [data-theme="light"] { --bg:#F8FAFC; --bg-card:#FFF; --bg-hover:#F1F5F9; --bg-input:#F1F5F9; --bg-sidebar:#FFF; --border:#E2E8F0; --text:#1E293B; --text-sec:#475569; --text-muted:#94A3B8; --shadow:0 4px 24px rgba(0,0,0,0.08); }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'Space Grotesk',-apple-system,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; transition:background var(--transition); }
+    .mono { font-family:'JetBrains Mono',monospace; }
+
+    /* Sidebar */
+    .sidebar { width:220px; background:var(--bg-sidebar); border-right:1px solid var(--border); display:flex; flex-direction:column; padding:20px 12px; position:fixed; top:0; left:0; bottom:0; z-index:100; }
+    .logo { display:flex; align-items:center; gap:8px; padding:0 8px 18px; border-bottom:1px solid var(--border); margin-bottom:18px; }
+    .logo svg { width:24px; height:24px; }
+    .logo-text { font-size:1.1rem; font-weight:700; color:var(--text-muted); }
+    .logo-text span { color:var(--orange); }
+    .nav-item { display:flex; align-items:center; gap:9px; padding:8px 12px; border-radius:var(--radius-sm); color:var(--text-sec); cursor:pointer; font-size:0.82rem; font-weight:500; transition:all var(--transition); }
+    .nav-item:hover { background:var(--bg-hover); color:var(--text); }
+    .nav-item.active { background:var(--orange-glow); color:var(--orange); }
+    .nav-item svg { width:15px; height:15px; opacity:0.7; }
+    .nav-item.active svg { opacity:1; }
+    .sidebar-footer { margin-top:auto; padding-top:14px; border-top:1px solid var(--border); }
+    .theme-toggle { display:flex; align-items:center; gap:8px; cursor:pointer; padding:6px 12px; border-radius:var(--radius-sm); }
+    .theme-toggle:hover { background:var(--bg-hover); }
+    .theme-toggle-track { width:36px; height:20px; background:var(--bg-input); border:1px solid var(--border); border-radius:10px; position:relative; }
+    .theme-toggle-thumb { width:14px; height:14px; background:var(--orange); border-radius:50%; position:absolute; top:2px; left:2px; transition:transform var(--transition); display:flex; align-items:center; justify-content:center; }
+    [data-theme="light"] .theme-toggle-thumb { transform:translateX(16px); }
+    .theme-toggle-thumb svg { width:9px; height:9px; }
+    .theme-label { font-size:0.7rem; color:var(--text-muted); }
+    .sidebar-links { display:flex; gap:10px; padding:6px 12px; }
+    .sidebar-links a { font-size:0.65rem; color:var(--text-muted); text-decoration:none; }
+    .sidebar-links a:hover { color:var(--orange); }
+
+    /* Main */
+    .main { margin-left:220px; flex:1; padding:24px; width:calc(100% - 220px); }
+
+    /* Common */
+    .panel { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:20px; margin-bottom:18px; }
+    .panel-title { font-size:0.75rem; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; }
+    .panel-title .dot { width:6px; height:6px; border-radius:50%; margin-right:6px; display:inline-block; }
+    .panel-title .dot-green { background:var(--green); }
+    .panel-title .dot-orange { background:var(--orange); }
+    .btn { padding:6px 12px; border:none; border-radius:var(--radius-sm); font-family:inherit; font-size:0.72rem; font-weight:600; cursor:pointer; transition:all var(--transition); }
+    .btn-primary { background:var(--orange); color:white; }
+    .btn-primary:hover { background:var(--orange-hover); }
+    .btn-outline { background:transparent; color:var(--text-sec); border:1px solid var(--border); }
+    .btn-outline:hover { border-color:var(--orange); color:var(--orange); }
+    .btn-danger { color:var(--red); border:1px solid var(--red); background:transparent; }
+    .btn-danger:hover { background:var(--red); color:white; }
+    .input { padding:7px 10px; background:var(--bg-input); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); font-family:inherit; font-size:0.78rem; outline:none; }
+    .input:focus { border-color:var(--orange); }
+    select.input { padding-right:28px; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 10px center; }
+    .badge { font-size:0.62rem; padding:2px 6px; border-radius:4px; background:var(--orange-glow); color:var(--orange); font-weight:600; }
+    .toast { position:fixed; bottom:20px; right:20px; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px 18px; font-size:0.78rem; box-shadow:var(--shadow); transform:translateY(80px); opacity:0; transition:all 0.3s; z-index:999; }
+    .toast.show { transform:translateY(0); opacity:1; }
+    .empty { text-align:center; padding:30px; color:var(--text-muted); font-size:0.82rem; }
+
+    /* Overview */
+    .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; margin-bottom:18px; }
+    .stat { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:16px; }
+    .stat-label { font-size:0.65rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px; }
+    .stat-val { font-size:1.4rem; font-weight:700; }
+    .stat-val.green { color:var(--green); }
+    .stat-val.orange { color:var(--orange); }
+    .dev-list { display:flex; flex-direction:column; gap:8px; }
+    .dev-item { display:flex; align-items:center; justify-content:space-between; padding:12px 14px; background:var(--bg-input); border-radius:var(--radius-sm); cursor:pointer; transition:all var(--transition); }
+    .dev-item:hover { background:var(--bg-hover); transform:translateX(3px); }
+    .dev-info { display:flex; align-items:center; gap:10px; }
+    .dev-dot { width:8px; height:8px; border-radius:50%; background:var(--text-muted); flex-shrink:0; }
+    .dev-dot.on { background:var(--green); box-shadow:0 0 6px rgba(34,197,94,0.5); }
+    .dev-name { font-weight:600; font-size:0.82rem; }
+    .dev-meta { font-size:0.68rem; color:var(--text-muted); margin-top:2px; }
+
+    /* Console */
+    .console-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; padding-bottom:14px; border-bottom:1px solid var(--border); }
+    .console-id { display:flex; align-items:center; gap:10px; }
+    .console-id .dev-dot { width:10px; height:10px; }
+    .console-name { font-size:1.2rem; font-weight:700; }
+    .console-meta { display:flex; gap:12px; font-size:0.7rem; color:var(--text-muted); margin-top:3px; }
+    .console-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; }
+    @media(max-width:900px) { .console-grid { grid-template-columns:1fr; } }
+    .var-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:8px; }
+    .var-item { background:var(--bg-input); border-radius:var(--radius-sm); padding:10px; }
+    .var-key { font-size:0.6rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.3px; margin-bottom:3px; }
+    .var-val { font-size:1.1rem; font-weight:700; color:var(--orange); font-family:'JetBrains Mono',monospace; }
+    .var-val .unit { font-size:0.65rem; color:var(--text-muted); font-weight:400; }
+    .ctrl-list { display:flex; flex-direction:column; gap:8px; }
+    .ctrl-item { background:var(--bg-input); border-radius:var(--radius-sm); padding:12px; display:flex; align-items:center; justify-content:space-between; }
+    .ctrl-label { font-size:0.78rem; font-weight:500; }
+    .ctrl-sub { font-size:0.62rem; color:var(--text-muted); }
+    .ctrl-right { display:flex; align-items:center; gap:8px; }
+    .ctrl-x { cursor:pointer; color:var(--text-muted); font-size:0.7rem; }
+    .ctrl-x:hover { color:var(--red); }
+    .slider { -webkit-appearance:none; width:110px; height:4px; background:var(--border); border-radius:2px; outline:none; }
+    .slider::-webkit-slider-thumb { -webkit-appearance:none; width:14px; height:14px; background:var(--orange); border-radius:50%; cursor:pointer; }
+    .slider-v { font-family:'JetBrains Mono',monospace; font-size:0.75rem; font-weight:600; min-width:28px; text-align:right; }
+    .toggle { width:36px; height:20px; background:var(--border); border-radius:10px; position:relative; cursor:pointer; transition:background 0.2s; }
+    .toggle.on { background:var(--orange); }
+    .toggle-k { width:14px; height:14px; background:white; border-radius:50%; position:absolute; top:3px; left:3px; transition:transform 0.2s; }
+    .toggle.on .toggle-k { transform:translateX(16px); }
+    .quick-row { display:flex; gap:6px; align-items:center; margin-top:10px; padding:10px; background:var(--bg-input); border-radius:var(--radius-sm); }
+    .quick-row input { flex:1; }
+    .log { max-height:240px; overflow-y:auto; display:flex; flex-direction:column; gap:3px; }
+    .log-e { display:flex; align-items:flex-start; gap:7px; padding:5px 8px; border-radius:4px; font-size:0.7rem; }
+    .log-e:hover { background:var(--bg-input); }
+    .log-t { color:var(--text-muted); font-family:'JetBrains Mono',monospace; font-size:0.62rem; min-width:52px; }
+    .log-i { width:5px; height:5px; border-radius:50%; margin-top:4px; flex-shrink:0; }
+    .log-i.in { background:var(--blue); }
+    .log-i.out { background:var(--orange); }
+    .log-i.sys { background:var(--green); }
+    .log-m { color:var(--text-sec); }
+    .log-m b { color:var(--text); font-weight:500; }
+
+    /* Pairing */
+    .pair-code { font-family:'JetBrains Mono',monospace; font-size:1.4rem; font-weight:700; letter-spacing:2px; color:var(--orange); background:var(--orange-glow); padding:10px 20px; border-radius:var(--radius-sm); display:inline-block; }
+
+    @media(max-width:768px) { .sidebar{display:none} .main{margin-left:0;width:100%;padding:14px} }
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="logo">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024"><g fill="#F97316" transform="scale(0.1,-0.1) translate(0,-10240)"><path d="M5020 8781 c-52 -32 -495 -296 -985 -586 -1142 -677 -1882 -1117 -1959 -1164 l-61 -38 -2 -1874 -3 -1874 248 -147 c976 -579 1455 -863 1700 -1009 155 -93 287 -169 292 -169 7 0 10 745 10 2088 l0 2088 456 273 c262 157 462 270 470 267 8 -3 130 -74 272 -159 141 -84 344 -204 450 -267 l192 -114 0 -518 c0 -285 0 -521 1 -525 1 -9 -1071 -652 -1088 -653 -6 0 -129 70 -272 155 -144 85 -264 155 -266 155 -3 0 -4 -187 -3 -417 l3 -416 250 -149 c137 -81 252 -148 255 -148 6 0 272 158 1008 598 l362 217 220 348 220 348 -2 701 c-3 689 -3 701 -23 712 -18 10 -18 10 -3 -3 17 -12 18 -50 18 -535 l0 -521 -218 -130 c-314 -188 -431 -255 -442 -255 -7 0 -10 177 -10 515 l0 516 -31 42 c-17 23 -122 175 -234 337 -254 368 -365 529 -435 630 -108 155 -205 300 -209 312 -2 7 3 9 15 5 18 -7 18 -6 0 8 -11 8 -25 15 -32 15 -10 0 -1124 -659 -1539 -909 l-60 -36 -3 -1688 c-1 -928 -4 -1687 -7 -1687 -3 0 -180 104 -393 231 l-387 231 -2 1534 -2 1535 52 33 c28 18 457 273 952 566 495 293 994 588 1108 656 115 68 213 124 218 124 10 0 107 -57 431 -252 54 -32 102 -58 108 -58 14 0 664 388 667 398 2 6 -1185 714 -1205 719 -4 1 -50 -25 -102 -56z"/><path d="M7897 6466 c-181 -289 -332 -528 -338 -531 -5 -4 -9 122 -9 329 0 184 -3 337 -7 339 -5 3 -7 -154 -5 -348 l2 -353 -261 -414 c-144 -227 -313 -494 -375 -593 -62 -99 -181 -286 -262 -415 -82 -129 -148 -237 -146 -239 2 -2 140 78 308 178 167 101 314 185 325 188 21 5 21 5 21 -309 0 -237 -3 -317 -12 -328 -11 -12 -10 -12 5 -1 16 13 17 38 16 335 l-1 321 184 111 c100 61 336 202 523 314 187 111 346 208 353 214 9 9 12 192 10 870 l-3 858 -328 -526z"/><path d="M7873 4809 l-333 -200 0 -487 -1 -487 -212 -125 c-189 -111 -495 -293 -1829 -1086 l-376 -224 -321 189 c-176 104 -323 186 -325 183 -2 -4 -4 -181 -4 -394 -1 -320 2 -389 13 -398 8 -7 154 -95 325 -195 l311 -184 602 356 c331 196 773 458 982 582 209 125 638 379 952 566 l573 340 0 883 c0 699 -3 882 -12 881 -7 0 -163 -91 -345 -200z"/></g><g fill="#6B7280" transform="scale(0.1,-0.1) translate(0,-10240)"><path d="M6222 7792 c-172 -104 -317 -193 -322 -198 -6 -6 101 -75 293 -189 289 -172 624 -371 1125 -669 l232 -139 0 -334 c0 -204 4 -332 9 -328 10 6 646 1021 655 1045 4 11 -20 30 -82 66 -48 28 -301 179 -562 334 -887 529 -1009 600 -1022 600 -7 0 -154 -85 -326 -188z"/><path d="M5202 7410 c3 -10 106 -163 208 -310 70 -101 181 -262 435 -630 112 -162 217 -314 234 -337 l31 -42 0 -516 c0 -338 3 -515 10 -515 11 0 128 67 442 255 l218 130 0 522 0 522 -122 74 c-112 69 -896 534 -1148 682 -58 34 -147 87 -199 118 -93 57 -116 66 -109 47z"/><path d="M6799 4415 c-178 -107 -409 -246 -514 -309 -760 -456 -1298 -776 -1308 -776 -7 0 -117 63 -246 140 -129 77 -238 140 -243 140 -4 0 -8 -168 -8 -373 l0 -374 183 -108 c100 -60 191 -114 203 -122 19 -12 116 44 1150 665 l1129 678 3 317 c2 261 0 317 -11 317 -8 0 -160 -88 -338 -195z"/></g></svg>
+      <div class="logo-text"><span>Pul</span>Sync</div>
+    </div>
+    <div class="nav-item active" data-page="overview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Devices</div>
+    <div class="nav-item" data-page="console"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>Console</div>
+    <div class="nav-item" data-page="firmware"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v6"/><path d="m8 5 4-3 4 3"/><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M7 13h.01"/><path d="M11 13h6"/><path d="M7 17h.01"/><path d="M11 17h6"/></svg>Firmware</div>
+    <div class="nav-item" data-page="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68 1.65 1.65 0 0 0 10 3.17V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings</div>
+    <div class="sidebar-footer">
+      <div class="theme-toggle" onclick="toggleTheme()"><div class="theme-toggle-track"><div class="theme-toggle-thumb"><svg class="ico-moon" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg><svg class="ico-sun" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" style="display:none"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="6.34" y2="6.34"/><line x1="17.66" y1="17.66" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="6.34" y2="17.66"/><line x1="17.66" y1="6.34" x2="19.07" y2="4.93"/></svg></div></div><span class="theme-label">Dark</span></div>
+      <div class="sidebar-links"><a href="https://pulsync.in">pulsync.in</a><a href="https://github.com/pulsync">GitHub</a></div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <!-- OVERVIEW PAGE -->
+    <div id="page-overview">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px"><h2 style="font-size:1.2rem;font-weight:700">Devices</h2><button class="btn btn-primary" onclick="nav('settings')">+ New Device</button></div>
+      <div class="stats">
+        <div class="stat"><div class="stat-label">Total</div><div class="stat-val" id="s-total">-</div></div>
+        <div class="stat"><div class="stat-label">Online</div><div class="stat-val green" id="s-online">-</div></div>
+        <div class="stat"><div class="stat-label">Data Points</div><div class="stat-val orange" id="s-data">-</div></div>
+        <div class="stat"><div class="stat-label">Server</div><div class="stat-val" id="s-server" style="font-size:0.8rem">-</div></div>
+      </div>
+      <div class="panel"><div class="dev-list" id="dev-list"><div class="empty">Loading...</div></div></div>
+    </div>
+
+    <!-- CONSOLE PAGE -->
+    <div id="page-console" style="display:none">
+      <div class="console-header">
+        <div class="console-id"><div class="dev-dot on" id="c-dot"></div><div><div class="console-name" id="c-name">-</div><div class="console-meta" id="c-meta"></div></div></div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-outline" onclick="nav('overview')">&larr; Back</button>
+          <button class="btn btn-outline" onclick="showRepair()">Re-pair</button>
+          <button class="btn btn-danger" onclick="sendCmd('reboot',{})">Reboot</button>
+        </div>
+      </div>
+      <!-- Re-pair panel (hidden by default) -->
+      <div class="panel" id="repair-panel" style="display:none">
+        <div class="panel-title">Re-pair Device</div>
+        <p style="font-size:0.76rem;color:var(--text-sec);margin-bottom:12px">Device lost connection or changed network? Scan this QR from the captive portal (connect to the <span class="mono">Pulsync-XXXX</span> AP first), or enter the code manually.</p>
+        <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap">
+          <div><div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:4px">Pairing code:</div><div class="pair-code" id="repair-code">-</div></div>
+          <canvas id="repair-qr" width="150" height="150" style="border-radius:8px;background:white;padding:6px"></canvas>
+        </div>
+      </div>
+      <div class="console-grid">
+        <div class="panel"><div class="panel-title"><span><span class="dot dot-green"></span>Live Data</span><span style="font-size:0.6rem;text-transform:none;font-weight:400" id="c-updated"></span></div><div class="var-grid" id="c-vars"><div class="empty">Waiting for data...</div></div></div>
+        <div class="panel"><div class="panel-title"><span><span class="dot dot-orange"></span>Controls</span><button class="btn btn-outline" onclick="addWidget()">+ Add</button></div><div class="ctrl-list" id="c-ctrls"></div>
+          <div class="quick-row"><input class="input" id="q-cmd" placeholder="command" style="width:80px"><input class="input" id="q-val" placeholder='{"value":0}'><button class="btn btn-primary" onclick="sendQuickCmd()">Send</button></div>
+          <div class="quick-row" style="margin-top:4px"><input class="input" id="q-key" placeholder="config key" style="width:80px"><input class="input" id="q-cfgval" placeholder="value"><button class="btn btn-outline" onclick="pushCfg()">Push</button></div>
+        </div>
+      </div>
+      <div class="panel"><div class="panel-title"><span>Firmware (OTA)</span><span style="font-size:0.6rem;text-transform:none;font-weight:400" id="c-fw-current"></span></div>
+        <div id="c-fw-body"><div class="empty">Loading...</div></div>
+      </div>
+      <div class="panel"><div class="panel-title"><span>Config Portal Password</span></div>
+        <p style="font-size:0.76rem;color:var(--text-sec);margin-bottom:12px">Gates this device's on-device config menu (the captive portal opened by holding the button). The device stores only a hash; reveal or regenerate the password here. Regenerating pushes a new one on the next heartbeat and the old one stops working.</p>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <div class="pair-code" id="c-cfgpw" style="min-width:150px">••••••••</div>
+          <button class="btn btn-outline" id="c-cfgpw-reveal" onclick="revealConfigPw()">Reveal</button>
+          <button class="btn btn-outline" id="c-cfgpw-regen" onclick="regenConfigPw()">Regenerate</button>
+        </div>
+        <div id="c-cfgpw-msg" style="font-size:0.72rem;color:var(--text-muted);margin-top:8px"></div>
+      </div>
+      <div class="panel"><div class="panel-title"><span>Activity</span><button class="btn btn-outline" style="font-size:0.6rem" onclick="consoleLog=[];renderLog()">Clear</button></div><div class="log" id="c-log"><div class="empty">Waiting...</div></div></div>
+    </div>
+
+    <!-- FIRMWARE / OTA PAGE -->
+    <div id="page-firmware" style="display:none">
+      <h2 style="font-size:1.2rem;font-weight:700;margin-bottom:18px">Firmware &amp; OTA</h2>
+      <div class="panel">
+        <div class="panel-title">Upload Firmware</div>
+        <p style="font-size:0.78rem;color:var(--text-sec);margin-bottom:6px">Upload a compiled <span class="mono">.bin</span> to your library, then attach it to a device from that device's console to push the update.</p>
+        <p style="font-size:0.72rem;color:var(--text-muted);margin-bottom:12px">Version: <span class="mono">x.y.z</span> or <span class="mono">x.y.z-label</span> (e.g. <span class="mono">0.1.1</span>, <span class="mono">0.1.1-dev3</span>). The label is a note — only its number affects order (<span class="mono">0.1.1</span> &lt; <span class="mono">0.1.1-dev1</span>). It must match the firmware's <span class="mono">PULSYNC_FW_VERSION</span> / <span class="mono">setVersion()</span>.</p>
+        <div style="display:flex;gap:8px;align-items:flex-start;background:rgba(230,180,80,0.08);border:1px solid rgba(230,180,80,0.35);border-radius:8px;padding:10px 12px;margin-bottom:14px">
+          <span style="font-size:0.85rem;line-height:1">&#9888;&#65039;</span>
+          <p style="font-size:0.72rem;color:var(--text-sec);margin:0">The version string is <b>trusted as-is</b> — nothing reads it back from the <span class="mono">.bin</span>. If it doesn't match the code you actually compiled, you can push the <b>wrong build</b> or trigger an <b>unintended downgrade</b> to a device. Type it carefully: it's your responsibility that this version matches the firmware in this file.</p>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <input class="input" id="fw-version" placeholder="Version e.g. 0.1.1" style="width:150px">
+          <input type="file" id="fw-file" accept=".bin" class="input" style="width:auto;padding:6px">
+          <button class="btn btn-primary" id="fw-upload-btn" onclick="uploadFw()">Upload</button>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-title"><span>Versions</span><span style="font-size:0.6rem;text-transform:none;font-weight:400" id="fw-active-label"></span></div>
+        <div class="dev-list" id="fw-list"><div class="empty">Loading...</div></div>
+      </div>
+    </div>
+
+    <!-- SETTINGS PAGE -->
+    <div id="page-settings" style="display:none">
+      <h2 style="font-size:1.2rem;font-weight:700;margin-bottom:18px">Settings</h2>
+      <div class="panel"><div class="panel-title">Generate Pairing Code</div>
+        <p style="font-size:0.78rem;color:var(--text-sec);margin-bottom:12px">Use in the captive portal or firmware: <code class="mono" style="background:var(--bg-input);padding:2px 6px;border-radius:4px;font-size:0.72rem">Pulsync.begin("PUL-XXXXXX");</code></p>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:16px"><input class="input" id="p-name" placeholder="Device name" style="width:180px"><button class="btn btn-primary" onclick="genCode()">Generate</button></div>
+        <div id="p-result" style="display:none"><div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:4px">Pairing code:</div><div class="pair-code" id="p-code"></div><div style="margin-top:12px"><canvas id="qr-canvas" width="160" height="160" style="border-radius:8px;background:white;padding:6px"></canvas></div></div>
+      </div>
+      <div class="panel"><div class="panel-title">Server Info</div>
+        <div style="font-size:0.78rem;color:var(--text-sec)" id="srv-info"></div>
+      </div>
+      <div class="panel" id="session-panel" style="display:none"><div class="panel-title">Session</div>
+        <p style="font-size:0.78rem;color:var(--text-sec);margin-bottom:12px">Admin password gate is enabled.</p>
+        <button class="btn btn-outline" onclick="doLogout()">Log out</button>
+      </div>
+    </div>
+
+    <!-- ADD WIDGET MODAL -->
+    <div id="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;display:none;align-items:center;justify-content:center">
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:24px 28px;width:340px;max-width:90%;overflow:hidden">
+        <div style="font-weight:600;margin-bottom:14px">Add Control Widget</div>
+        <input class="input" id="w-cmd" placeholder="Command name (e.g. set_led)" style="width:100%;margin-bottom:10px">
+        <select class="input" id="w-type" style="width:100%;margin-bottom:10px" onchange="document.getElementById('w-range').style.display=this.value==='slider'?'flex':'none'"><option value="slider">Slider (number)</option><option value="toggle">Toggle (bool)</option><option value="number">Number input</option><option value="text">Text input</option></select>
+        <div id="w-range" style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px"><input class="input" id="w-min" placeholder="Min (0)" style="width:100%" value="0"><input class="input" id="w-max" placeholder="Max (255)" style="width:100%" value="255"></div>
+        <div style="display:flex;gap:6px;justify-content:flex-end"><button class="btn btn-outline" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveWidget()">Add</button></div>
+      </div>
+    </div>
+
+    <!-- ADMIN LOGIN OVERLAY -->
+    <div id="login-overlay" style="display:none;position:fixed;inset:0;background:var(--bg,#0B1120);z-index:300;align-items:center;justify-content:center">
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:28px 30px;width:320px;max-width:90%;text-align:center">
+        <div style="font-weight:700;font-size:1.05rem;margin-bottom:6px">Pulsync</div>
+        <div style="font-size:0.78rem;color:var(--text-sec);margin-bottom:16px">Enter admin password</div>
+        <input class="input" type="password" id="login-pw" placeholder="Password" style="width:100%;margin-bottom:10px" onkeydown="if(event.key==='Enter')doLogin()">
+        <div id="login-err" style="color:var(--red,#EF4444);font-size:0.72rem;min-height:14px;margin-bottom:8px"></div>
+        <button class="btn btn-primary" style="width:100%" onclick="doLogin()">Unlock</button>
+      </div>
+    </div>
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const API='/api/device';
+    let selectedId=null, consoleLog=[], widgets=JSON.parse(localStorage.getItem('ps-widgets')||'[]');
+    let ws=null, debounceTimers={};
+    let serverAddr=location.host, serverInfo={ip:location.hostname,port:location.port||80};
+    fetch('/api/server-info').then(r=>r.json()).then(i=>{if(i&&i.ip){serverInfo=i;serverAddr=`${i.ip}:${i.port}`;const el=document.getElementById('s-server');if(el)el.textContent=serverAddr;const si=document.getElementById('srv-info');if(si)si.innerHTML=`IP: <b>${i.ip}</b><br>Port: ${i.port}<br>Dashboard: <a href="http://${serverAddr}/" style="color:var(--orange)">http://${serverAddr}/</a>`}}).catch(()=>{});
+
+    // --- Helpers ---
+    function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500)}
+    // Short, non-sensitive device reference for list/console subtitles. The
+    // pairing code is an enrollment secret and must not be shown here; the last
+    // segment of the device UUID is a stable, safe identifier (e.g. "#5535dd93").
+    function shortId(id){const s=String(id||'');const seg=s.includes('-')?s.split('-').pop():s;return '#'+seg.slice(-8);}
+    function timeAgo(ts){if(!ts)return'never';const s=Math.floor((Date.now()-new Date(ts).getTime())/1000);if(s<0)return'now';if(s<60)return s+'s ago';if(s<3600)return Math.floor(s/60)+'m '+s%60+'s ago';if(s<86400)return Math.floor(s/3600)+'h ago';return Math.floor(s/86400)+'d ago'}
+    async function api(path,opts={}){
+      const r=await fetch(API+path,{credentials:'same-origin',headers:{'Content-Type':'application/json',...opts.headers},...opts});
+      if(r.status===401){showLogin();throw new Error('unauthorized');}
+      return r.json();
+    }
+    // --- Admin login gate ---
+    function showLogin(){document.getElementById('login-overlay').style.display='flex';setTimeout(()=>{const i=document.getElementById('login-pw');if(i)i.focus()},50);}
+    function hideLogin(){document.getElementById('login-overlay').style.display='none';}
+    async function doLogin(){
+      const pw=document.getElementById('login-pw').value;
+      const err=document.getElementById('login-err');err.textContent='';
+      try{
+        const r=await fetch(API+'/admin/login',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pw})});
+        if(!r.ok){err.textContent='Incorrect password';return;}
+        document.getElementById('login-pw').value='';hideLogin();boot();
+      }catch(e){err.textContent='Login failed';}
+    }
+    async function doLogout(){
+      try{await fetch(API+'/admin/logout',{method:'POST',credentials:'same-origin'});}catch(e){}
+      showLogin();
+    }
+    // Start the app once we know we're allowed in.
+    function boot(){loadDevices();connectWS();}
+
+    // --- Navigation ---
+    function nav(p){document.querySelectorAll('[id^="page-"]').forEach(e=>e.style.display='none');document.getElementById('page-'+p).style.display='block';document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active'));document.querySelector(`.nav-item[data-page="${p}"]`).classList.add('active');if(p==='console'&&selectedId)loadConsole();if(p==='firmware')loadFirmware()}
+    document.querySelectorAll('.nav-item').forEach(e=>e.addEventListener('click',()=>nav(e.dataset.page)));
+
+    // --- Theme ---
+    function toggleTheme(){const h=document.documentElement,n=h.getAttribute('data-theme')==='dark'?'light':'dark';h.setAttribute('data-theme',n);localStorage.setItem('ps-theme',n);document.querySelector('.theme-label').textContent=n==='dark'?'Dark':'Light';document.querySelector('.ico-moon').style.display=n==='dark'?'block':'none';document.querySelector('.ico-sun').style.display=n==='light'?'block':'none'}
+    const st=localStorage.getItem('ps-theme');if(st){document.documentElement.setAttribute('data-theme',st);if(st==='light'){document.querySelector('.theme-label').textContent='Light';document.querySelector('.ico-moon').style.display='none';document.querySelector('.ico-sun').style.display='block'}}
+
+    // --- Overview ---
+    async function loadDevices(){
+      const d=await api('/devices');
+      store.set(d.devices||[]);
+      restoreSelection();
+      render();
+    }
+    async function delDevice(id,n){if(!confirm(`Delete "${n}"?`))return;await api(`/devices/${id}`,{method:'DELETE'});toast('Deleted');if(selectedId===id){selectedId=null;try{if(localStorage.getItem('ps-selected')===id)localStorage.removeItem('ps-selected')}catch(e){}selectionRestored=false;}loadDevices()}
+
+    // --- Console ---
+    function openConsole(id){selectedId=id;try{localStorage.setItem('ps-selected',id)}catch(e){}document.getElementById('repair-panel').style.display='none';nav('console')}
+
+    // Restore the last-viewed device after a load/refresh. Prefer the saved id
+    // (Option A); if it's gone or unset, fall back to the first device (Option B).
+    // Runs once, after the store is first populated.
+    let selectionRestored=false;
+    function restoreSelection(){
+      if(selectionRestored)return;
+      const list=store.list();
+      if(!list.length)return;              // nothing to select yet; try again next load
+      selectionRestored=true;
+      let id=null;
+      try{const saved=localStorage.getItem('ps-selected');if(saved&&store.get(saved))id=saved}catch(e){}
+      if(!id)id=list[0].id;                // fallback: first device
+      selectedId=id;
+      try{localStorage.setItem('ps-selected',id)}catch(e){}
+      if(document.getElementById('page-console').style.display!=='none')loadConsole();
+    }
+
+    async function showRepair(){
+      const d=store.get(selectedId);if(!d)return;
+      const panel=document.getElementById('repair-panel');
+      if(panel.style.display==='block'){panel.style.display='none';return}
+      panel.style.display='block';
+      document.getElementById('repair-code').textContent=d.pairing_code||'(no code)';
+      // Generate QR with device's existing pairing code
+      if(d.pairing_code){
+        const url=`http://192.168.4.1/?code=${d.pairing_code}&server=${serverAddr}`;
+        try{const qr=await(await fetch(`/api/qr?text=${encodeURIComponent(url)}`)).json();if(qr.qr){const img=new Image();img.onload=()=>{const c=document.getElementById('repair-qr').getContext('2d');c.clearRect(0,0,150,150);c.drawImage(img,0,0,150,150)};img.src=qr.qr}}catch(e){}
+      }
+    }
+    async function loadConsole(){
+      const d=store.get(selectedId);if(!d)return;
+      // Ensure the firmware library is loaded (for the attach dropdown) and
+      // fetch this device's current assignment.
+      if(!fwData.firmware||!fwData.firmware.length){try{await loadFirmware()}catch(e){}}
+      try{
+        const detail=await api(`/devices/${selectedId}`);
+        if(detail&&!detail.error){d.assigned_firmware=detail.assigned_firmware||null;if(detail.fw_version)d.fw_version=detail.fw_version;}
+      }catch(e){}
+      // Seed store with the latest persisted data point if we don't have live data yet
+      if(!d.latest){
+        const data=await api(`/devices/${selectedId}/data?limit=1`);
+        if(data.data&&data.data.length){store.applyData(selectedId,data.data[0].data,data.data[0].timestamp)}
+      }
+      renderConsole();
+      renderWidgets();
+    }
+    function renderVars(payload,ts){
+      const g=document.getElementById('c-vars');if(!payload){g.innerHTML='<div class="empty">No data</div>';return}
+      document.getElementById('c-updated').textContent=timeAgo(ts);
+      g.innerHTML=Object.entries(payload).map(([k,v])=>{
+        let d=v,u='';if(typeof v==='number'){if(k.includes('temp'))u='°C';else if(k.includes('humid'))u='%';else if(k.includes('volt'))u='V';else if(k.includes('heap'))u='KB';else if(k.includes('rssi'))u='dBm';else if(k.includes('uptime'))u='s';if(typeof d==='number'&&d%1!==0)d=d.toFixed(1)}
+        return`<div class="var-item"><div class="var-key">${k}</div><div class="var-val">${d}<span class="unit">${u}</span></div></div>`}).join('');
+    }
+
+    // --- Widgets ---
+    function renderWidgets(){
+      const el=document.getElementById('c-ctrls');
+      if(!widgets.length){el.innerHTML='<div class="empty" style="padding:12px">No controls. Click + Add.</div>';return}
+      el.innerHTML=widgets.map((w,i)=>{
+        let ctrl='';
+        if(w.type==='slider')ctrl=`<input type="range" class="slider" min="${w.min||0}" max="${w.max||255}" value="${w.val||0}" oninput="wChange(${i},this.value);this.nextElementSibling.textContent=this.value"><span class="slider-v">${w.val||0}</span>`;
+        else if(w.type==='toggle')ctrl=`<div class="toggle ${w.val?'on':''}" onclick="this.classList.toggle('on');wChange(${i},this.classList.contains('on'))"><div class="toggle-k"></div></div>`;
+        else if(w.type==='number')ctrl=`<input class="input" type="number" value="${w.val||0}" style="width:60px" onchange="wChange(${i},this.value)">`;
+        else ctrl=`<input class="input" value="${w.val||''}" style="width:100px" placeholder="value"><button class="btn btn-primary" style="margin-left:4px" onclick="wSend(${i},this.previousElementSibling.value)">Send</button>`;
+        return`<div class="ctrl-item"><div><div class="ctrl-label">${w.cmd}</div><div class="ctrl-sub">${w.type}</div></div><div class="ctrl-right">${ctrl}<span class="ctrl-x" onclick="rmWidget(${i})">&times;</span></div></div>`}).join('');
+    }
+    function wChange(i,v){widgets[i].val=v;localStorage.setItem('ps-widgets',JSON.stringify(widgets));if(widgets[i].type==='text')return;if(debounceTimers[i])clearTimeout(debounceTimers[i]);debounceTimers[i]=setTimeout(()=>wSend(i,v),1000)}
+    function wSend(i,v){const w=widgets[i];let val=v;if(w.type==='toggle')val=(v===true||v==='true');else if(w.type==='slider'||w.type==='number')val=Number(v);sendCmd(w.cmd,{value:val})}
+    function rmWidget(i){widgets.splice(i,1);localStorage.setItem('ps-widgets',JSON.stringify(widgets));renderWidgets()}
+    function addWidget(){document.getElementById('modal').style.display='flex'}
+    function closeModal(){document.getElementById('modal').style.display='none'}
+    function saveWidget(){const cmd=document.getElementById('w-cmd').value.trim();if(!cmd){toast('Enter command');return}widgets.push({cmd,type:document.getElementById('w-type').value,min:+document.getElementById('w-min').value||0,max:+document.getElementById('w-max').value||255,val:null});localStorage.setItem('ps-widgets',JSON.stringify(widgets));closeModal();renderWidgets();toast('Widget added')}
+
+    // --- Commands ---
+    async function sendCmd(cmd,payload){if(!selectedId)return;await api(`/devices/${selectedId}/command`,{method:'POST',body:JSON.stringify({command:cmd,payload})});addLog('out',`<b>cmd</b> ${cmd} → ${JSON.stringify(payload)}`);toast('Sent: '+cmd)}
+    async function sendQuickCmd(){const cmd=document.getElementById('q-cmd').value.trim();if(!cmd||!selectedId)return;let p={};try{p=JSON.parse(document.getElementById('q-val').value||'{}')}catch(e){toast('Bad JSON');return}sendCmd(cmd,p)}
+    async function pushCfg(){const k=document.getElementById('q-key').value.trim(),v=document.getElementById('q-cfgval').value.trim();if(!k||!selectedId)return;await api(`/devices/${selectedId}/config`,{method:'PUT',body:JSON.stringify({[k]:v})});addLog('out',`<b>config</b> ${k} → ${v}`);toast('Config pushed')}
+
+    // --- Activity Log ---
+    function addLog(type,msg){consoleLog.unshift({type,msg,time:new Date()});if(consoleLog.length>100)consoleLog.pop();renderLog()}
+    function renderLog(){const el=document.getElementById('c-log');if(!consoleLog.length){el.innerHTML='<div class="empty">Waiting...</div>';return}el.innerHTML=consoleLog.map(e=>`<div class="log-e"><span class="log-i ${e.type}"></span><span class="log-t">${e.time.toLocaleTimeString('en',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'})}</span><span class="log-m">${e.msg}</span></div>`).join('')}
+
+    // --- Settings / Pairing ---
+    async function genCode(){const n=document.getElementById('p-name').value.trim();const d=await api('/devices',{method:'POST',body:JSON.stringify({name:n||null})});document.getElementById('p-code').textContent=d.pairingCode;document.getElementById('p-result').style.display='block';toast('Code: '+d.pairingCode);loadDevices();
+      // QR
+      try{const info=await(await fetch('/api/server-info')).json();const url=`http://192.168.4.1/?code=${d.pairingCode}&server=${info.ip}:${info.port}`;const qr=await(await fetch(`/api/qr?text=${encodeURIComponent(url)}`)).json();if(qr.qr){const img=new Image();img.onload=()=>{const c=document.getElementById('qr-canvas').getContext('2d');c.clearRect(0,0,160,160);c.drawImage(img,0,0,160,160)};img.src=qr.qr}}catch(e){}}
+    document.getElementById('srv-info').innerHTML=`Host: ${serverAddr}`;
+
+    // --- Firmware / OTA ---
+    let fwData={firmware:[],active:null};
+    async function loadFirmware(){
+      try{ fwData=await api('/firmware'); }catch(e){ fwData={firmware:[],active:null}; }
+      renderFirmware();
+    }
+    function renderFirmware(){
+      const lbl=document.getElementById('fw-active-label');
+      const list=fwData.firmware||[];
+      if(lbl)lbl.textContent=list.length?`${list.length} build${list.length>1?'s':''}`:'';
+      const el=document.getElementById('fw-list'); if(!el)return;
+      if(!list.length){el.innerHTML='<div class="empty">No firmware uploaded yet. Upload a build, then attach it to a device from its console.</div>';return}
+      el.innerHTML=list.map(f=>{
+        const kb=f.size_bytes?(f.size_bytes/1024).toFixed(0)+' KB':'';
+        const when=f.uploaded_at?timeAgo(f.uploaded_at):'';
+        return`<div class="dev-item"><div class="dev-info"><div class="dev-dot"></div><div><div class="dev-name">v${f.version}</div><div class="dev-meta">${kb}${kb&&when?' · ':''}${when}</div></div></div></div>`}).join('');
+    }
+    // Client-side mirror of the server rule: x.y.z + optional label with <=1 number.
+    function validVersion(v){
+      if(!/^\d+\.\d+\.\d+(-[a-zA-Z0-9._-]+)?$/.test(v))return false;
+      const dash=v.indexOf('-'); if(dash===-1)return true;
+      const nums=v.slice(dash+1).match(/\d+/g);
+      return !nums||nums.length<=1;
+    }
+    async function uploadFw(){
+      const version=document.getElementById('fw-version').value.trim();
+      const fileInput=document.getElementById('fw-file');
+      const file=fileInput.files&&fileInput.files[0];
+      if(!version){toast('Enter a version');return}
+      if(!validVersion(version)){toast('Use x.y.z or x.y.z-label with at most one number in the label');return}
+      if(!file){toast('Choose a .bin file');return}
+      const btn=document.getElementById('fw-upload-btn');btn.disabled=true;btn.textContent='Uploading...';
+      try{
+        const r=await fetch(`${API}/firmware?version=${encodeURIComponent(version)}`,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/octet-stream'},body:file});
+        if(r.status===401){showLogin();return;}
+        const j=await r.json();
+        if(!r.ok||j.error){toast(j.error||'Upload failed');}
+        else{toast('Uploaded v'+version);document.getElementById('fw-version').value='';fileInput.value='';loadFirmware();}
+      }catch(e){toast('Upload failed');}
+      finally{btn.disabled=false;btn.textContent='Upload';}
+    }
+
+    // ============================================================
+    //  CENTRAL STORE — single source of truth for all pages.
+    //  WS events + polls write here; pages render() from it.
+    //  store.devices[id] = { ...device, latest:{data,ts}, lastData }
+    // ============================================================
+    const store = {
+      devices: {},          // id -> device record (merged)
+      order: [],            // id order for the list
+      set(list){
+        this.order = list.map(d=>d.id);
+        list.forEach(d=>{ this.devices[d.id] = { ...(this.devices[d.id]||{}), ...d }; });
+        // drop deleted
+        Object.keys(this.devices).forEach(id=>{ if(!this.order.includes(id)) delete this.devices[id]; });
+      },
+      get(id){ return this.devices[id]; },
+      list(){ return this.order.map(id=>this.devices[id]).filter(Boolean); },
+      // Merge a live data payload for a device
+      applyData(id, data, ts){
+        const d = this.devices[id]; if(!d) return false;
+        const t = ts || new Date().toISOString();
+        d.last_seen = t; d.liveSeen = t;
+        d.latest = { data, ts: t };
+        return true;
+      },
+      applySeen(id, ts){
+        const d = this.devices[id]; if(!d) return false;
+        const t = ts || new Date().toISOString();
+        d.last_seen = t; d.liveSeen = t;
+        return true;
+      },
+      // Freshest timestamp we know about (DB last_seen OR live WS event)
+      seenAt(d){
+        if(!d) return null;
+        const a = d.last_seen ? new Date(d.last_seen).getTime() : 0;
+        const b = d.liveSeen ? new Date(d.liveSeen).getTime() : 0;
+        const m = Math.max(a,b);
+        return m ? new Date(m).toISOString() : null;
+      },
+      isOnline(d){ const s=this.seenAt(d); return s && (Date.now()-new Date(s).getTime())<60000; }
+    };
+
+    // Central render dispatcher — every page reads from store.
+    function render(){
+      renderOverview();
+      renderConsole();
+    }
+
+    function renderOverview(){
+      const list = store.list();
+      const total=document.getElementById('s-total'); if(total)total.textContent=list.length;
+      const online=list.filter(d=>store.isOnline(d));
+      const so=document.getElementById('s-online'); if(so)so.textContent=online.length;
+      const ss=document.getElementById('s-server'); if(ss)ss.textContent=serverAddr;
+      const el=document.getElementById('dev-list'); if(!el)return;
+      if(!list.length){el.innerHTML='<div class="empty">No devices. Generate a pairing code in Settings.</div>';return}
+      // Patch in place if items already exist, else full render
+      const existing=el.querySelector('.dev-item');
+      if(!existing || el.querySelectorAll('.dev-item').length!==list.length){
+        el.innerHTML=list.map(d=>{
+          const on=store.isOnline(d);const seen=store.seenAt(d);
+          return`<div class="dev-item" data-devid="${d.id}" onclick="openConsole('${d.id}')"><div class="dev-info"><div class="dev-dot ${on?'on':''}"></div><div><div class="dev-name">${d.name||'Unnamed'}</div><div class="dev-meta">${shortId(d.id)} · <span data-ts="${seen||''}">${timeAgo(seen)}</span></div></div></div><div style="display:flex;gap:6px;align-items:center">${d.fw_version?`<span class="badge">v${d.fw_version}</span>`:''}<button class="btn btn-outline" style="padding:3px 6px;font-size:0.6rem" onclick="event.stopPropagation();delDevice('${d.id}','${d.name||shortId(d.id)}')">&times;</button></div></div>`}).join('');
+      } else {
+        list.forEach(d=>{
+          const on=store.isOnline(d);const seen=store.seenAt(d);
+          const dot=el.querySelector(`[data-devid="${d.id}"] .dev-dot`); if(dot)dot.className='dev-dot '+(on?'on':'');
+          const ts=el.querySelector(`[data-devid="${d.id}"] [data-ts]`); if(ts){ts.dataset.ts=seen||'';ts.textContent=timeAgo(seen)}
+        });
+      }
+    }
+
+    function renderConsole(){
+      if(!selectedId) return;
+      const d=store.get(selectedId); if(!d) return;
+      const on=store.isOnline(d);
+      const seen=store.seenAt(d);
+      const cd=document.getElementById('c-dot'); if(cd)cd.className='dev-dot '+(on?'on':'');
+      const cn=document.getElementById('c-name'); if(cn)cn.textContent=d.name||'Unnamed';
+      const cm=document.getElementById('c-meta'); if(cm)cm.innerHTML=`<span class="mono">${shortId(d.id)}</span>${d.fw_version?`<span class="badge">v${d.fw_version}</span>`:''}<span data-ts="${seen||''}">${timeAgo(seen)}</span>`;
+      if(d.latest) renderVars(d.latest.data, d.latest.ts);
+      renderDeviceFirmware(d);
+      // Only re-mask the config password when the SELECTED DEVICE changes — NOT
+      // on every render. renderConsole() fires on each incoming data point, so
+      // resetting here unconditionally would hide a freshly revealed password.
+      if(cfgPwDeviceId!==selectedId){cfgPwDeviceId=selectedId;resetConfigPw();}
+    }
+
+    // --- Per-device config-portal password (reveal / regenerate) ---
+    let cfgPwDeviceId=null;   // device the password panel currently reflects
+    let cfgPwHideTimer=null;  // auto-hide timer for a revealed password
+    // Reset the panel to its masked state (device switch, or after auto-hide).
+    function resetConfigPw(){
+      if(cfgPwHideTimer){clearTimeout(cfgPwHideTimer);cfgPwHideTimer=null;}
+      const pw=document.getElementById('c-cfgpw'); if(pw)pw.textContent='\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022';
+      const rv=document.getElementById('c-cfgpw-reveal'); if(rv)rv.textContent='Reveal';
+      const msg=document.getElementById('c-cfgpw-msg'); if(msg)msg.textContent='';
+    }
+    // Show a value in the password field. If autoHide is true, re-mask after 5s
+    // (used for a plain reveal); regenerate passes false so its confirmation
+    // stays visible. A pending timer is always cleared first.
+    function showConfigPw(pw,autoHide){
+      if(cfgPwHideTimer){clearTimeout(cfgPwHideTimer);cfgPwHideTimer=null;}
+      const el=document.getElementById('c-cfgpw');
+      if(el)el.textContent=pw||'(not set)';
+      const rv=document.getElementById('c-cfgpw-reveal'); if(rv)rv.textContent='Hide';
+      if(autoHide){cfgPwHideTimer=setTimeout(resetConfigPw,5000);}
+    }
+    async function revealConfigPw(){
+      if(!selectedId)return;
+      const rv=document.getElementById('c-cfgpw-reveal');
+      const msg=document.getElementById('c-cfgpw-msg');
+      // Toggle back to masked if already shown.
+      if(rv&&rv.textContent==='Hide'){resetConfigPw();return;}
+      if(msg)msg.textContent='Loading...';
+      const r=await api(`/devices/${selectedId}/config-password`);
+      if(!r||r.error){if(msg)msg.textContent=(r&&r.error)||'Failed to load';return;}
+      if(!r.has_hash){if(msg)msg.textContent='';showConfigPw('(not set — enroll the device first)',false);return;}
+      showConfigPw(r.password||'(unavailable)',true);
+      if(msg)msg.textContent='Hides in 5s.';
+    }
+    async function regenConfigPw(){
+      if(!selectedId)return;
+      if(!confirm('Regenerate this device\'s config password? The current one stops working once the device picks up the new one (next heartbeat).'))return;
+      const msg=document.getElementById('c-cfgpw-msg');
+      if(msg)msg.textContent='Regenerating...';
+      const r=await api(`/devices/${selectedId}/config-password/regenerate`,{method:'POST'});
+      if(!r||!r.success){if(msg)msg.textContent=(r&&r.error)||'Failed';return;}
+      // Keep the new password visible (no auto-hide) — the user needs to note
+      // it down; they can Hide manually.
+      showConfigPw(r.password,false);
+      if(msg)msg.textContent='New password set. Note it down — reaches the device on its next heartbeat.';
+      toast('Config password regenerated');
+    }
+
+    // Compare two version strings by their numeric components, matching the
+    // device-side ordering in pulsync_ota.c (semver_compare): extract up to 4
+    // integers (major.minor.patch + one label counter), compare per-component,
+    // and on a tie the version with MORE components wins. Text is a separator.
+    //   0.1.1 < 0.1.1-dev1 < 0.1.1-dev2 ; 0.1.2 > 0.1.1-dev9 ; rc10 > rc2
+    // Returns >0 if a>b, <0 if a<b, 0 if equal.
+    function cmpVersion(a,b){
+      const MAX=4;
+      const extract=v=>{const m=String(v||'').match(/\d+/g)||[];return m.slice(0,MAX).map(Number)};
+      const pa=extract(a),pb=extract(b);
+      const n=Math.min(pa.length,pb.length);
+      for(let i=0;i<n;i++){if(pa[i]!==pb[i])return pa[i]-pb[i]}
+      return pa.length-pb.length;
+    }
+
+    // --- Per-device firmware (OTA attach) ---
+    function renderDeviceFirmware(d){
+      const cur=document.getElementById('c-fw-current');
+      const body=document.getElementById('c-fw-body');
+      if(!body)return;
+      if(cur)cur.textContent=d.fw_version?`running v${d.fw_version}`:'version unknown';
+      const builds=fwData.firmware||[];
+      const assigned=d.assigned_firmware||null;
+      if(!builds.length){body.innerHTML='<div class="empty">No firmware uploaded. Add a build on the Firmware page first.</div>';body.dataset.fwsig='';return}
+      let status='';
+      if(assigned){
+        const match=d.fw_version&&assigned.version===d.fw_version;
+        status=match
+          ?`<span style="font-size:0.68rem;color:var(--green)">Up to date — attached v${assigned.version}</span>`
+          :`<span style="font-size:0.68rem;color:var(--orange)">Attached v${assigned.version} — will update on next heartbeat</span>`;
+      } else {
+        status='<span style="font-size:0.68rem;color:var(--text-muted)">No firmware attached to this device.</span>';
+      }
+      // Signature of everything that affects the panel's structure (build list +
+      // assignment + running version). Live telemetry updates don't change this,
+      // so we can skip rebuilding the <select> and avoid closing an open dropdown.
+      const sig=JSON.stringify([builds.map(f=>[f.id,f.version]),assigned?assigned.id:null,d.fw_version||null]);
+      if(body.dataset.fwsig===sig){
+        // Structure unchanged — patch the status text only, leave the <select> intact.
+        const st=document.getElementById('c-fw-status');
+        if(st)st.innerHTML=status;
+        return;
+      }
+      body.dataset.fwsig=sig;
+      // Disable any build older than what the device currently runs — no
+      // downgrades from the dashboard. If the running version is unknown, allow all.
+      const running=d.fw_version||null;
+      const opts=builds.map(f=>{
+        const lower=running&&cmpVersion(f.version,running)<0;
+        const sel=assigned&&assigned.id===f.id&&!lower?' selected':'';
+        return`<option value="${f.id}"${sel}${lower?' disabled':''}>v${f.version}${lower?' (older than running)':''}</option>`;
+      }).join('');
+      body.innerHTML=`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">`
+        +`<select class="input" id="c-fw-sel" style="width:auto">${opts}</select>`
+        +`<button class="btn btn-primary" style="padding:6px 12px" onclick="attachFw()">Attach</button>`
+        +(assigned?`<button class="btn btn-outline" style="padding:6px 12px" onclick="detachFw()">Detach</button>`:'')
+        +`</div><span id="c-fw-status">${status}</span>`;
+    }
+    async function attachFw(){
+      if(!selectedId)return;
+      const sel=document.getElementById('c-fw-sel');if(!sel)return;
+      const id=parseInt(sel.value,10);if(!id){toast('Pick a version');return}
+      // Safety net: refuse to attach a build older than the device's running version.
+      const d0=store.get(selectedId);
+      const build=(fwData.firmware||[]).find(f=>f.id===id);
+      if(d0&&d0.fw_version&&build&&cmpVersion(build.version,d0.fw_version)<0){
+        toast(`v${build.version} is older than running v${d0.fw_version}`);return;
+      }
+      try{
+        const j=await api(`/devices/${selectedId}/firmware`,{method:'PUT',body:JSON.stringify({firmware_id:id})});
+        if(j.error){toast(j.error);return}
+        const d=store.get(selectedId);if(d)d.assigned_firmware=j.assigned_firmware||null;
+        const v=j.assigned_firmware?j.assigned_firmware.version:'';
+        toast('Attached v'+v);addLog('sys',`<b>OTA</b> attached v${v}`);renderConsole();
+      }catch(e){toast('Attach failed');}
+    }
+    async function detachFw(){
+      if(!selectedId)return;
+      if(!confirm('Detach firmware? The device stays on its current version and will not be offered updates.'))return;
+      try{
+        const j=await api(`/devices/${selectedId}/firmware`,{method:'PUT',body:JSON.stringify({firmware_id:null})});
+        if(j.error){toast(j.error);return}
+        const d=store.get(selectedId);if(d)d.assigned_firmware=null;
+        toast('Detached');addLog('sys','<b>OTA</b> firmware detached');renderConsole();
+      }catch(e){toast('Detach failed');}
+    }
+
+    // --- WebSocket ---
+    function connectWS(){if(ws&&(ws.readyState===0||ws.readyState===1))return;const proto=location.protocol==='https:'?'wss:':'ws:';ws=new WebSocket(`${proto}//${location.host}/api/live`);ws.onopen=()=>addLog('sys','Dashboard connected');ws.onmessage=e=>{try{handleWS(JSON.parse(e.data))}catch(x){}};ws.onclose=()=>{ws=null;setTimeout(connectWS,5000)};ws.onerror=()=>ws.close()}
+    function handleWS(ev){
+      if(ev.type==='device_data'){
+        store.applyData(ev.deviceId, ev.data, ev.timestamp);
+        if(ev.deviceId===selectedId) addLog('in',`<b>data</b> ${Object.entries(ev.data).map(([k,v])=>k+'='+v).join(' ')}`);
+        render();
+      } else if(ev.type==='heartbeat'){
+        store.applySeen(ev.deviceId, ev.timestamp);
+        render();
+      } else if(ev.type==='enrolled'){
+        loadDevices();
+      } else if(ev.type==='command_sent'&&ev.deviceId===selectedId){
+        addLog('out',`<b>cmd</b> ${ev.command}`);
+      } else if(ev.type==='ota_status'){
+        const d=store.get(ev.deviceId);const nm=d?(d.name||shortId(ev.deviceId)):shortId(ev.deviceId);
+        if(ev.status==='offered'){
+          if(ev.deviceId===selectedId)addLog('sys',`<b>OTA</b> update to v${ev.version} offered`);
+        } else if(ev.status==='updated'){
+          if(d)d.fw_version=ev.version;
+          toast(`${nm} updated to v${ev.version}`);
+          if(ev.deviceId===selectedId)addLog('sys',`<b>OTA</b> device now running v${ev.version}`);
+          render();
+        }
+        // Refresh firmware page if it's open (deployment status may change)
+        if(document.getElementById('page-firmware').style.display!=='none')loadFirmware();
+      }
+    }
+
+    // --- Init ---
+    (async function init(){
+      try{
+        const s=await(await fetch(API+'/admin/status',{credentials:'same-origin'})).json();
+        if(s.enabled){const sp=document.getElementById('session-panel');if(sp)sp.style.display='block';}
+        if(s.enabled && !s.authed){showLogin();return;}  // wait for login; boot() runs after
+      }catch(e){/* status unreachable — fall through and let calls 401 if needed */}
+      boot();
+    })();
+    setInterval(()=>{loadDevices().catch(()=>{})},30000);
+    // tick: refresh relative times + recompute online/offline dots from store
+    setInterval(()=>{document.querySelectorAll('[data-ts]').forEach(e=>{e.textContent=timeAgo(e.dataset.ts)});render()},1000);
+  </script>
+</body>
+</html>

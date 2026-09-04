@@ -1,0 +1,10 @@
+node_modules/
+.env
+.env.*
+!.env.example
+*.db
+*.db-shm
+*.db-wal
+storage/
+*.log
+.DS_Store
