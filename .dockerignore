@@ -1,0 +1,20 @@
+# Never copy the host's node_modules into the image — it may contain
+# platform-specific native binaries (better-sqlite3) built for the host OS/arch,
+# which would shadow the Linux binaries installed by `npm ci` in the container.
+node_modules/
+
+# Secrets and local runtime data
+.env
+.env.*
+!.env.example
+*.db
+*.db-shm
+*.db-wal
+storage/
+
+# VCS / misc
+.git/
+*.log
+.DS_Store
+Dockerfile
+docker-compose.yml
