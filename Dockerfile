@@ -17,10 +17,10 @@ COPY . .
 RUN mkdir -p /app/storage/firmware
 
 # HTTP (dashboard + device API) and MQTT broker
-EXPOSE 3000 1883
+EXPOSE 3456 1883
 
 ENV NODE_ENV=production \
-    PORT=3000 \
+    PORT=3456 \
     OTA_STORAGE_PATH=/app/storage/firmware
 
 CMD ["node", "src/standalone/index.js"]

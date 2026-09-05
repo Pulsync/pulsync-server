@@ -3,7 +3,7 @@
  */
 
 const config = {
-  port: parseInt(process.env.PORT || '3000', 10),
+  port: parseInt(process.env.PORT || '3456', 10),
   mode: process.env.PULSYNC_MODE || 'self-hosted',
 
   db: {

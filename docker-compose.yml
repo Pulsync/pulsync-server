@@ -4,7 +4,7 @@
 # Single service, fully self-contained: SQLite storage + in-process MQTT broker.
 # No external database needed.
 #
-#   Dashboard / device API : http://<your-ip>:3000
+#   Dashboard / device API : http://<your-ip>:3456
 #   MQTT (devices)         : <your-ip>:1883
 #
 # To use PostgreSQL instead of SQLite, set DATABASE_URL and add your own
@@ -14,10 +14,10 @@ services:
   server:
     build: .
     ports:
-      - "3000:3000"   # HTTP (dashboard + device API)
+      - "3456:3456"   # HTTP (dashboard + device API)
       - "1883:1883"   # MQTT broker
     environment:
-      PORT: "3000"
+      PORT: "3456"
       MQTT_PORT: "1883"
       OTA_STORAGE_PATH: /app/storage/firmware
       # Optional dashboard/management password gate (empty = open):

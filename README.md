@@ -18,11 +18,11 @@ npm install
 npm start
 ```
 
-Then open the dashboard at `http://localhost:3000/`. On the LAN the server also
+Then open the dashboard at `http://localhost:3456/`. On the LAN the server also
 advertises itself as `pulsync.local`, so devices can find it by name.
 
 Configuration is via environment variables — see `.env.example`. With none set,
-the defaults give you SQLite + embedded MQTT on port 3000.
+the defaults give you SQLite + embedded MQTT on port 3456.
 
 ## Docker (optional)
 
@@ -35,7 +35,7 @@ Generate a pairing code from the dashboard (Settings → Generate Pairing Code),
 then in your ESP32 firmware:
 
 ```cpp
-Pulsync.setServer("pulsync.local:3001");  // or your server's host:port
+Pulsync.setServer("pulsync.local:3456");  // or your server's host:port
 Pulsync.begin("PUL-XXXXXX");              // the pairing code
 ```
 

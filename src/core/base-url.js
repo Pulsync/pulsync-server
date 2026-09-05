@@ -12,7 +12,7 @@
 let baseUrl = '';
 
 /**
- * Set the public base URL (e.g. "http://192.168.0.103:3001"). No trailing slash.
+ * Set the public base URL (e.g. "http://192.168.0.103:3456"). No trailing slash.
  * @param {string} url
  */
 export function setBaseUrl(url) {
