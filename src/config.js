@@ -11,20 +11,12 @@ const config = {
     sqlitePath: process.env.SQLITE_PATH || './pulsync.db',
   },
 
-  jwt: {
-    secret: process.env.JWT_SECRET || 'dev-secret-change-in-production',
-  },
-
   admin: {
     // Optional single-password gate for the standalone dashboard + management
     // routes. Empty = gate disabled (open), which is the default for local dev.
+    // When set, admin session cookies are HMAC-signed; set JWT_SECRET (env) to
+    // keep sessions stable across restarts, otherwise an ephemeral key is used.
     password: process.env.ADMIN_PASSWORD || '',
-  },
-
-  email: {
-    provider: process.env.EMAIL_PROVIDER || '',
-    from: process.env.EMAIL_FROM || 'Pulsync <info@pulsync.in>',
-    resendApiKey: process.env.RESEND_API_KEY || '',
   },
 
   ota: {
@@ -43,11 +35,6 @@ const config = {
 
   mqtt: {
     internalUrl: process.env.MQTT_INTERNAL_URL || 'mqtt://localhost:1883',
-  },
-
-  log: {
-    provider: process.env.LOG_PROVIDER || '',
-    apiKey: process.env.LOG_API_KEY || '',
   },
 };
 

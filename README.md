@@ -24,6 +24,17 @@ advertises itself as `pulsync.local`, so devices can find it by name.
 Configuration is via environment variables — see `.env.example`. With none set,
 the defaults give you SQLite + embedded MQTT on port 3456.
 
+## Security notes
+
+- **`ADMIN_PASSWORD`** gates the dashboard + management routes. It's empty
+  (open) by default, which is fine on a trusted LAN. **Set it if the dashboard
+  is reachable beyond your trusted network.**
+- **`JWT_SECRET`** signs admin session cookies. If you leave it unset, a random
+  key is generated per process, so admin sessions reset on every restart. Set a
+  long random value (`openssl rand -hex 32`) to keep sessions stable.
+- The dashboard runs over plain HTTP (no TLS) — intended for LAN use. Put it
+  behind a reverse proxy with TLS if you expose it publicly.
+
 ## Docker (optional)
 
 Docker is **not** required — plain Node works. A `docker-compose.yml` is provided
